@@ -8,4 +8,8 @@
     <NoWarn>CS8618, NU1803</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="7.0.1" />
+  </ItemGroup>
+
 </Project>
