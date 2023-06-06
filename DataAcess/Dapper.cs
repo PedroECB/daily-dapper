@@ -21,12 +21,15 @@ namespace DataAcess
                     category1.Description = "Microsoft Azure";
                     category1.Code = "T23Q23A";
 
-                    int rowsAffecteds = CreateCategory(dbConnection, category1);
-                    Console.WriteLine($"AFFECTED ROWS: {rowsAffecteds}");
+                    // int rowsAffecteds = CreateCategory(dbConnection, category1);
+                    // Console.WriteLine($"AFFECTED ROWS: {rowsAffecteds}");
 
                     //QUERY SELECT
                     string sqlSelectString = "SELECT * FROM category";
                     ListCategories(dbConnection, sqlSelectString);
+
+                    //CALL PROCEDURE
+                    ExecuteProcedureInsertStudent(dbConnection, "Teste Oliveira");
                 }
             }
             catch (Exception ex)
@@ -74,7 +77,37 @@ namespace DataAcess
                 code = category.Code
             });
 
+            // //Execução alternativa com executeManyInserts
+            // int rowsAffectedMany = dbConnection.Execute(insertSql, new[]{
+            // new
+            // {
+            //     description = category.Description,
+            //     code = category.Code
+            // },
+            // new
+            // {
+            //     description = category.Description,
+            //     code = category.Code
+            // },
+            // new
+            // {
+            //     description = category.Description,
+            //     code = category.Code
+            // }
+            // });
+
             return rowsAffected;
+        }
+
+        public static int ExecuteProcedureInsertStudent(NpgsqlConnection dbConnection, string studentName)
+        {
+            Console.WriteLine("------------------- INSERINDO NOVO ALUNO --------------------------");
+            string sqlString = "CALL pr_insert_student(:name)";
+            var parameters = new { name = studentName };
+            int affectedRows = dbConnection.Execute(sqlString, parameters, commandType: System.Data.CommandType.Text);
+            Console.WriteLine("------------------- ALUNO INSERIDO COM SUCESSO --------------------");
+
+            return affectedRows;
         }
     }
 }
