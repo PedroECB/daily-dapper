@@ -1,8 +1,11 @@
 using System;
+using System.Data;
 using Npgsql;
 using Dapper;
 using Models;
-
+using NpgsqlTypes;
+using Npgsql.Schema;
+using System.Reflection.Metadata;
 namespace DataAcess
 {
     public class Dapper
@@ -14,22 +17,30 @@ namespace DataAcess
             try
             {
                 const string connectionString = Constants.STRING_CONNECTION;
-
                 using (var dbConnection = new NpgsqlConnection(connectionString))
                 {
-                    Category category1 = new Category();
-                    category1.Description = "Microsoft Azure";
-                    category1.Code = "T23Q23A";
+                    // Category category1 = new Category();
+                    // category1.Description = "Microsoft Azure";
+                    // category1.Code = "T23Q23A";
 
                     // int rowsAffecteds = CreateCategory(dbConnection, category1);
                     // Console.WriteLine($"AFFECTED ROWS: {rowsAffecteds}");
 
                     //QUERY SELECT
-                    string sqlSelectString = "SELECT * FROM category";
-                    ListCategories(dbConnection, sqlSelectString);
+                    // string sqlSelectString = "SELECT * FROM category";
+                    // ListCategories(dbConnection, sqlSelectString);
 
                     //CALL PROCEDURE
-                    ExecuteProcedureInsertStudent(dbConnection, "Teste Oliveira");
+                    // ExecuteProcedureInsertStudent(dbConnection, "João Frederico");
+
+                    //CALL FUNCTION OUTPUT RESULTSET
+                    // ExecuteReadFunction(dbConnection);
+
+                    //CALL EXECUTESCALAR
+                    // ExecuteScalar(dbConnection);
+
+                    //SELECT FROM VIEW
+                    ReadView(dbConnection);
                 }
             }
             catch (Exception ex)
@@ -99,15 +110,75 @@ namespace DataAcess
             return rowsAffected;
         }
 
-        public static int ExecuteProcedureInsertStudent(NpgsqlConnection dbConnection, string studentName)
+        public static int ExecuteProcedureInsertStudent(NpgsqlConnection dbConnection, string? studentName = null)
         {
             Console.WriteLine("------------------- INSERINDO NOVO ALUNO --------------------------");
-            string sqlString = "CALL pr_insert_student(:name)";
-            var parameters = new { name = studentName };
-            int affectedRows = dbConnection.Execute(sqlString, parameters, commandType: System.Data.CommandType.Text);
-            Console.WriteLine("------------------- ALUNO INSERIDO COM SUCESSO --------------------");
+            string sqlString = "CALL pr_insert_student(:p_name, :p_qtd_rows)";
+            var parameters = new { p_name = studentName };
+            int affectedRows = dbConnection.Execute(sqlString, parameters, commandType: CommandType.Text);
+            return affectedRows;
+        }
+
+        public static int ExecuteProcedureInsertStudentCommand(NpgsqlConnection dbConnection, string? studentName = null)
+        {
+
+
+            //Get returned values from stored procedure npgsql using command
+            dbConnection.Open();
+            NpgsqlCommand cmd = new NpgsqlCommand("CALL pr_insert_student(:p_name)", dbConnection);
+            int affectedRows;
+            var p_name = new NpgsqlParameter(":p_name", studentName);
+            var p_qtd_rows = new NpgsqlParameter(":p_qtd_rows", NpgsqlDbType.Integer, 200, "p_qtd_rows", ParameterDirection.Output, false, 1, 1, DataRowVersion.Default, null);
+            cmd.CommandType = CommandType.Text;
+            cmd.Parameters.Add(p_name);
+            cmd.Parameters.Add(p_qtd_rows);
+            var reader = cmd.ExecuteReader();
+            // int affectedRows = cmd.Parameters[1].Value != null ? int.Parse(cmd.Parameters[1].Value.ToString()) : 0;
+            int.TryParse(cmd.Parameters[1]?.Value.ToString(), out affectedRows);
+            dbConnection.Close();
 
             return affectedRows;
         }
+
+        public static void ExecuteReadFunction(NpgsqlConnection dbConnection)
+        {
+            // string sqlSelectProc = "BEGIN; SELECT fn_list_student('cursor')";
+            string sqlSelectProc = "BEGIN; SELECT fn_list_student('cursor'); FETCH ALL IN \"cursor\"; COMMIT;";
+            var parameters = new { };
+            var listStudents = dbConnection.Query(sqlSelectProc, parameters);
+        }
+
+        /// <summary>
+        /// Método utilizado para retornar a primeira coluna do registro retornado
+        /// da base.
+        /// </summary>
+        /// <param name="dbConnection">Objeto de conexão aberta.</param>
+        /// <returns>
+        /// (dynamic) Valor da primeira célula retornada da query
+        /// </returns>
+        public static dynamic ExecuteScalar(NpgsqlConnection dbConnection)
+        {
+            Category student = new Category() { Code = "PTK231", Description = "My Category 4" };
+            string sqlString = "INSERT INTO category VALUES (default, :description, :code) RETURNING category.\"Id\";";
+            var returnedValue = dbConnection.ExecuteScalar(sqlString, student);
+            return returnedValue;
+        }
+
+        /// <summary>
+        /// Método utilizado para retornar listagem de uma view
+        /// </summary>
+        /// <param name="dbConnection">Objeto de conexão aberta.</param>
+        /// <returns>
+        /// List<dynamic> Lista de registros retornados na view
+        /// </returns>
+        public static void ReadView(NpgsqlConnection dbConnection)
+        {
+            string sqlString = "SELECT * FROM vw_student_course";
+            var listFromView = dbConnection.Query(sqlString);
+
+            foreach (var item in listFromView)
+                Console.WriteLine($" ID: {item.Id} NAME: {item.Name} COURSE: {item.description}");
+        }
+
     }
 }
