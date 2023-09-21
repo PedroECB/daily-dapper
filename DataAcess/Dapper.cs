@@ -46,7 +46,13 @@ namespace DataAcess
                     // ExecuteQueryMultiple(dbConnection);
 
                     //SELECT IN QUERY
-                    ExecuteQuerySelectIn(dbConnection);
+                    // ExecuteQuerySelectIn(dbConnection);
+
+                    //USING LIKE
+                    // ExecuteQueryLike(dbConnection);
+
+                    //TRANSACTIONS
+                    ExecuteTransaction(dbConnection);
                 }
             }
             catch (Exception ex)
@@ -210,8 +216,32 @@ namespace DataAcess
         {
             var parameters = new[] { 3, 6 };
             string stringSqlQuery = "SELECT * FROM student WHERE student.\"Id\" = ANY (@Id)";
-            var result = dbConnection.Query(stringSqlQuery, new { Id = parameters});
+            var result = dbConnection.Query(stringSqlQuery, new { Id = parameters });
+        }
 
+        public static void ExecuteQueryLike(NpgsqlConnection dbConnection)
+        {
+            string stringSqlQuery = "SELECT * FROM student WHERE student.\"Name\" like @expression";
+            var result = dbConnection.Query(stringSqlQuery, new { expression = "%Pedro%" });
+        }
+
+        public static void ExecuteTransaction(NpgsqlConnection dbConnection)
+        {
+            dbConnection.Open();
+            var transaction = dbConnection.BeginTransaction();
+
+            Category category = new Category() { Description = "New Category", Code = "JPA23120" };
+            string insertSql = "INSERT INTO category VALUES (DEFAULT, :description, :code)";
+            int rowsAffected = dbConnection.Execute(insertSql, new
+            {
+                description = category.Description,
+                code = category.Code
+            }, transaction);
+
+            Console.WriteLine($"Linhas afetadas: {rowsAffected}");
+            transaction.Commit();
+            Console.WriteLine($"Linhas afetadas: {rowsAffected}");
+            dbConnection.Close();
         }
     }
 }
