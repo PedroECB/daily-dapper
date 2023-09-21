@@ -40,7 +40,10 @@ namespace DataAcess
                     // ExecuteScalar(dbConnection);
 
                     //SELECT FROM VIEW
-                    ReadView(dbConnection);
+                    // ReadView(dbConnection);
+
+                    //QUERY MULTIPLE
+                    ExecuteQueryMultiple(dbConnection);
                 }
             }
             catch (Exception ex)
@@ -171,14 +174,35 @@ namespace DataAcess
         /// <returns>
         /// List<dynamic> Lista de registros retornados na view
         /// </returns>
-        public static void ReadView(NpgsqlConnection dbConnection)
+        public static IEnumerable<dynamic> ReadView(NpgsqlConnection dbConnection)
         {
             string sqlString = "SELECT * FROM vw_student_course";
             var listFromView = dbConnection.Query(sqlString);
 
-            foreach (var item in listFromView)
-                Console.WriteLine($" ID: {item.Id} NAME: {item.Name} COURSE: {item.description}");
+            // foreach (var item in listFromView)
+            //     Console.WriteLine($" ID: {item.Id} NAME: {item.Name} COURSE: {item.description}");
+
+            return listFromView;
         }
+
+        /// <summary>
+        /// Método utilizado para retornar listagem de diferentes querys em conjunto
+        /// </summary>
+        /// <param name="dbConnection">Objeto de conexão aberta.</param>
+        /// <returns>
+        /// Void
+        /// </returns>
+        public static void ExecuteQueryMultiple(NpgsqlConnection dbConnection)
+        {
+            string stringSqlQuery = "SELECT * FROM author; SELECT * FROM course";
+
+            using (var multi = dbConnection.QueryMultiple(stringSqlQuery))
+            {
+                var authors = multi.Read();
+                var courses = multi.Read();
+            }
+        }
+
 
     }
 }
