@@ -229,19 +229,29 @@ namespace DataAcess
         {
             dbConnection.Open();
             var transaction = dbConnection.BeginTransaction();
-
-            Category category = new Category() { Description = "New Category", Code = "JPA23120" };
-            string insertSql = "INSERT INTO category VALUES (DEFAULT, :description, :code)";
-            int rowsAffected = dbConnection.Execute(insertSql, new
+            try
             {
-                description = category.Description,
-                code = category.Code
-            }, transaction);
+                Category category = new Category() { Description = "New Category", Code = "JPA23120" };
+                string insertSql = "INSERT INTO category VALUES (DEFAULT, :description, :code)";
+                int rowsAffected = dbConnection.Execute(insertSql, new
+                {
+                    description = category.Description,
+                    code = category.Code
+                }, transaction);
 
-            Console.WriteLine($"Linhas afetadas: {rowsAffected}");
-            transaction.Commit();
-            Console.WriteLine($"Linhas afetadas: {rowsAffected}");
-            dbConnection.Close();
+                Console.WriteLine($"Linhas afetadas: {rowsAffected}");
+                transaction.Commit();
+                Console.WriteLine($"Linhas afetadas: {rowsAffected}");
+            }
+            catch (Exception exception)
+            {
+                transaction.Rollback();
+                throw exception;
+            }
+            finally
+            {
+                dbConnection.Close();
+            }
         }
     }
 }
