@@ -43,7 +43,10 @@ namespace DataAcess
                     // ReadView(dbConnection);
 
                     //QUERY MULTIPLE
-                    ExecuteQueryMultiple(dbConnection);
+                    // ExecuteQueryMultiple(dbConnection);
+
+                    //SELECT IN QUERY
+                    ExecuteQuerySelectIn(dbConnection);
                 }
             }
             catch (Exception ex)
@@ -203,6 +206,12 @@ namespace DataAcess
             }
         }
 
+        public static void ExecuteQuerySelectIn(NpgsqlConnection dbConnection)
+        {
+            var parameters = new[] { 3, 6 };
+            string stringSqlQuery = "SELECT * FROM student WHERE student.\"Id\" = ANY (@Id)";
+            var result = dbConnection.Query(stringSqlQuery, new { Id = parameters});
 
+        }
     }
 }
